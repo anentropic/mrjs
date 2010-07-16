@@ -1,4 +1,18 @@
-// requires ('hash.js', jQuery);
+/*
+ * requires: hash.js, jQuery
+ * (could lose jQuery... just being lazy with $.extend(options) )
+ * intend to replace hash.js with html5 IndexedDB (or perhaps pluggable)
+ *
+ * reading more about MapReduce, this needs a 'Combiner' step...
+ * currently the combining happens implicitly in on_mapper_emit()
+ *
+ * possibly also a 'Partitioner' step... currently there's an implicit
+ * partitioning that distributes data to the Reducers in a round-robin fashion
+ *
+ * also needs a way for Mappers to request a new input without actually
+ * emitting a result
+ *
+ */ 
 
 var Manager = function(options) {
     this.options = $.extend(this.options, options);
