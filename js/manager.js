@@ -4,13 +4,22 @@
  * intend to replace hash.js with html5 IndexedDB (or perhaps pluggable)
  *
  * reading more about MapReduce, this needs a 'Combiner' step...
- * currently the combining happens implicitly in on_mapper_emit()
+ * currently a no-op combiner happens implicitly in on_mapper_emit()
  *
- * possibly also a 'Partitioner' step... currently there's an implicit
- * partitioning that distributes data to the Reducers in a round-robin fashion
+ * most importantly we need a 'shuffle and sort' step that happens after
+ * combining.  as much as possible we can use IndexedDB to do this for us,
+ * by adding a synthetic 'sort-key' field to the data.
+ *
+ * also need a 'Partitioner' step... currently there's an implicit no-op
+ * partitioning that distributes data to the Reducers in a round-robin fashion.
+ * the Partitioner would basically just parse the sort-key value into a
+ * Reducer id (in MapReduce the default is: [numeric-hash of the primary key]
+ * modulo [number of reducers])
  *
  * also needs a way for Mappers to request a new input without actually
- * emitting a result
+ * emitting a result... probably means queuing up an even split of the data to
+ * all the mappers initially rather than current round-robin distribution to
+ * next-available Mapper
  *
  */ 
 

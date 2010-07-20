@@ -40,6 +40,14 @@
         var start_btn = $('#startBtn');
         var output = $('#output');
         
+        /**
+         * we could use the function.toString() -> new Function('...') trick
+         * to pass function definitions into the Workers.
+         * it's a bit like eval but jQuery do it in their json parser...
+         * and it allows an easy API
+         */
+         
+        
         var manager = new Manager({
                 'map_js': map_js,
                 'reduce_js': reduce_js,
