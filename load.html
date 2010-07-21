@@ -1,15 +1,22 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-    <title>Web Workers test page</title>
+    <title>mrjs: load test data</title>
+    <script type="text/javascript" src="https://getfirebug.com/firebug-lite.js"></script>
     <script src="js/jquery-1.4.2.min.js" type="text/javascript"></script>
     <script src="js/hash.js" type="text/javascript"></script>
     <script src="js/manager.js" type="text/javascript"></script>
     <script>
     $(function () {
-        var open = window.indexedDB.open("iTunes", "iTunes sample db data");
-        open.onsuccess = function(event) {
-            var db = event.result;
+        var fileInput = $('#fileInput');
+        var loadBtn = $('#loadBtn');
+        
+        window.indexedDB = window.moz_indexedDB;
+        
+        var db;
+        indexedDB.open("iTunes", "iTunes sample db data").onsuccess = function(event) {
+            console.log('openDB.onsuccess');
+            db = event.result;
             if (db.version != "1") {
                 // User's first visit, initialize database.
                 var createdObjectStoreCount = 0;
@@ -20,7 +27,7 @@
                 function objectStoreCreated(event) {
                   if (++createdObjectStoreCount == objectStores.length) {
                     db.setVersion("1").onsuccess = function(event) {
-                        loadData(db);
+                        loadBtn.removeAttr('disabled');
                     };
                   }
                 }
@@ -33,17 +40,55 @@
                 }
             }
             else {
-              // User has been here before, no initialization required.
-              loadData(db);
+                // User has been here before, no initialization required.
+                loadBtn.removeAttr('disabled');
             }
         }
         
-        function loadData(db) {
-            
+        function loadData(file) {
+            var trackStore = db.objectStore('tracks');
+            var reader = new FileReader();
+            reader.readAsText(file);
+            console.log('loadData', db, trackStore);
+            reader.onload = function () {
+                console.log('reader.onload');
+                var lines = reader.result.split('\r\n');
+                var len = lines.length;
+                
+                var fields = lines.shift();
+                fields = fields.split('\t');
+                var f_len = fields.length;
+                for (var f = 0; f < f_len; f++) {
+                    fields[f] = fields[f].replace(' ', '');
+                }
+                console.log('fields:', fields);
+                
+                console.log('lines:', len);
+                for(var i = 0; i < len; i++) {
+                    var values = lines[i].split('\t');
+                    var obj = {};
+                    for (var f = 0; f < f_len; f++) {
+                        obj[fields[f]] = values[f];
+                    }
+                    console.log(obj, trackStore.add);
+                    var add = trackStore.add(obj);
+                    add.onsuccess = function(event) {
+                        console.log('added!');
+                    };
+                    add.onerror = function(event) {
+                        console.log('error!', event);
+                    };
+                }
+            }
         }
         
-        var fileInput = $('#fileInput');
-        var loadBtn = $('#loadBtn');
+        loadBtn.click(function(event){
+            var files = fileInput.get(0).files;
+            console.log('loadBtn.click',files);
+            if (files.length > 0) {
+                loadData(files[0]);
+            }
+        });
     });
     </script>
 </head>
@@ -51,7 +96,7 @@
     <h2>mrjs: load test data</h2>
     
     <p><input type="file" value="data" id="fileInput"/></p>
-    <p><input type="button" value="Load" id="loadBtn"/></p>
+    <p><input type="button" value="Load" id="loadBtn" disabled="disabled"/></p>
     <output id="output"></output>
     
 </body>
