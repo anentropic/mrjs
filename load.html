@@ -11,6 +11,8 @@
         var fileInput = $('#fileInput');
         var loadBtn = $('#loadBtn');
         
+        var LINE_END = '\r';
+        
         window.indexedDB = window.moz_indexedDB;
         
         var db;
@@ -46,16 +48,16 @@
         }
         
         function loadData(file) {
-            var trackStore = db.objectStore('tracks');
+            console.log('loadData');
             var reader = new FileReader();
             reader.readAsText(file);
-            console.log('loadData', db, trackStore);
             reader.onload = function () {
                 console.log('reader.onload');
-                var lines = reader.result.split('\r\n');
-                var len = lines.length;
-                
+                var lines = reader.result.split(LINE_END);
                 var fields = lines.shift();
+                var len = lines.length;
+                console.log('lines:', len);
+                
                 fields = fields.split('\t');
                 var f_len = fields.length;
                 for (var f = 0; f < f_len; f++) {
@@ -63,21 +65,34 @@
                 }
                 console.log('fields:', fields);
                 
-                console.log('lines:', len);
-                for(var i = 0; i < len; i++) {
-                    var values = lines[i].split('\t');
-                    var obj = {};
-                    for (var f = 0; f < f_len; f++) {
-                        obj[fields[f]] = values[f];
+                console.log('db:', db);
+                var tx = db.transaction(["tracks"], 0);
+                console.log('tx:', tx);
+                tx.oncomplete = function(e) {
+                    console.log('tx.oncomplete', e);
+                    var trackStore = tx.objectStore('tracks');
+                    console.log('trackStore:', trackStore);
+                    for(var i = 0; i < len; i++) {
+                        var values = lines[i].split('\t');
+                        var obj = {};
+                        for (var f = 0; f < f_len; f++) {
+                            obj[fields[f]] = values[f];
+                        }
+                        console.log(obj, trackStore.add);
+                        var add = trackStore.add(obj);
+                        add.onsuccess = function(event) {
+                            console.log('added!');
+                        }
+                        add.onerror = function(event) {
+                            console.log('add.onerror', event);
+                        }
                     }
-                    console.log(obj, trackStore.add);
-                    var add = trackStore.add(obj);
-                    add.onsuccess = function(event) {
-                        console.log('added!');
-                    };
-                    add.onerror = function(event) {
-                        console.log('error!', event);
-                    };
+                }
+                tx.onabort = function(e) {
+                    console.log('tx.onabort', e);
+                }
+                tx.ontimeout = function(e) {
+                    console.log('tx.ontimeout', e);
                 }
             }
         }
