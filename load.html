@@ -11,7 +11,7 @@
         var fileInput = $('#fileInput');
         var loadBtn = $('#loadBtn');
         
-        var LINE_END = '\r';
+        var LINE_END = navigator.platform == 'Win32' ? '\r\n' : '\r';
         
         window.indexedDB = window.moz_indexedDB;
         
@@ -39,7 +39,8 @@
         }
         
         var db;
-        indexedDB.open("iTunes", "iTunes sample db data").onsuccess = function(event) {
+        indexedDB.open("iTunes", "iTunes sample db data")
+          .onsuccess = function(event) {
             console.log('openDB.onsuccess');
             db = event.result;
             console.log('version', db.version);
@@ -48,14 +49,20 @@
                 initDB(db);
             }
             else {
-                var ok = false;
+                var store;
                 try {
-                    db.removeObjectStore('tracks');
-                    ok = true;
+                    store = db.objectStore('tracks', IDBTransaction.READ_WRITE);
                 } catch(err) {
-                    console.log(err.code, err.message);
+                    // object store doesn't exist
+                    console.log(err.code, err.message)
+                    initDB(db);
                 }
-                initDB(db);
+                if (store) {
+                    db.removeObjectStore('tracks').onsuccess = function(event){
+                        console.log('removeObjectStore.onsuccess');
+                        initDB(db)
+                    }
+                }
             }
         }
         
